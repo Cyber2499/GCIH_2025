@@ -2,7 +2,7 @@ During a live investigation look at processes via:
 * Get-Process
   * Enrich with Get-CimInstance (get parent process and command line)
 ```
-  # Get current date, time, and hostname for filename
+# Get current date, time, and hostname for filename
 $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 $hostname = $env:COMPUTERNAME
 $txtFilename = "ProcessList_$hostname`_$timestamp.txt"
