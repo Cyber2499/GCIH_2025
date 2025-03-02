@@ -120,5 +120,43 @@ Write-Host "  - CSV file: $csvOutputPath"
 ```
 
 During a live investigation also look at services
+* Check for persistance (sample)
+```
+# Define registry locations to scan
+$registryPaths = @(
+    "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run",
+    "HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce",
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\RunOnce"
+)
+
+# Iterate through each registry path and display entries
+foreach ($path in $registryPaths) {
+    Write-Host "`n🔍 Checking registry path: ${path}" -ForegroundColor Cyan
+
+    if (Test-Path $path) {
+        Write-Host "✅ Path exists: ${path}" -ForegroundColor Green
+
+        # Retrieve registry values
+        $items = Get-ItemProperty -Path $path -ErrorAction SilentlyContinue
+
+        # Extract properties (excluding system properties)
+        $entries = $items.PSObject.Properties | Where-Object { $_.Name -notmatch "^PS" }
+
+        if ($entries) {
+            Write-Host "📌 Entries found in `${path}:" -ForegroundColor Yellow
+            foreach ($entry in $entries) {
+                Write-Host "   🔹 Name  : $($entry.Name)"
+                Write-Host "   🔹 Value : $($entry.Value)`n"
+            }
+        } else {
+            Write-Host "⚠ No values found in ${path}" -ForegroundColor DarkYellow
+        }
+    } else {
+        Write-Host "🚫 Path does NOT exist: ${path}" -ForegroundColor Red
+    }
+}
+
+```
 * Get-Services
 * Get-CimInstance
