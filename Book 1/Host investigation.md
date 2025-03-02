@@ -13,17 +13,27 @@ $desktopPath = [System.Environment]::GetFolderPath("Desktop")
 $txtOutputPath = [System.IO.Path]::Combine($desktopPath, $txtFilename)
 $csvOutputPath = [System.IO.Path]::Combine($desktopPath, $csvFilename)
 
+# Gather all process data first
+$allProcesses = Get-CimInstance Win32_Process
+
+# Create a lookup table for Parent Process details
+$parentProcessLookup = @{}
+$allProcesses | ForEach-Object {
+    $parentProcessLookup[$_.ProcessId] = $_
+}
+
 # Gather process information
-$processes = Get-CimInstance Win32_Process | ForEach-Object {
+$processes = $allProcesses | ForEach-Object {
     $processName = (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue).ProcessName
-    $parentProcessName = (Get-Process -Id $_.ParentProcessId -ErrorAction SilentlyContinue).ProcessName
+    $parentProcess = $parentProcessLookup[$_.ParentProcessId]
 
     [PSCustomObject]@{
-        ParentProcessId   = $_.ParentProcessId
-        ParentProcessName = $parentProcessName
-        ProcessId         = $_.ProcessId
-        ProcessName       = $processName
-        CommandLine       = $_.CommandLine
+        ParentProcessId         = $_.ParentProcessId
+        ParentProcessName       = $parentProcess.ProcessName
+        ParentProcessCommandLine = $parentProcess.CommandLine
+        ProcessId               = $_.ProcessId
+        ProcessName             = $processName
+        CommandLine             = $_.CommandLine
     }
 }
 
@@ -31,11 +41,15 @@ $processes = Get-CimInstance Win32_Process | ForEach-Object {
 $processes | ForEach-Object {
     @"
 =======================================
-Process ID      : $($_.ProcessId)
-Process Name    : $($_.ProcessName)
-Parent ID       : $($_.ParentProcessId)
-Parent Name     : $($_.ParentProcessName)
-Command Line    : $($_.CommandLine)
+
+Parent Process ID        : $($_.ParentProcessId)
+Parent Process Name      : $($_.ParentProcessName)
+Parent Process Command   : $($_.ParentProcessCommandLine)
+
+Process ID               : $($_.ProcessId)
+Process Name             : $($_.ProcessName)
+Process Command Line     : $($_.CommandLine)
+
 =======================================
 "@
 } | Out-File -FilePath $txtOutputPath -Width 500
